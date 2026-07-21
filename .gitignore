@@ -1,0 +1,16 @@
+node_modules/
+.env
+.DS_Store
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+test-results/
+playwright-report/
+output/
+logs/
+rag_store/
+__pycache__/
+*.pyc
+supabase/.temp/
+.vscode/

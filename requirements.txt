@@ -1,0 +1,23 @@
+# LLM
+mistralai>=1.5.0
+
+# Web search (no API key) — "ddgs" is the current package name;
+# older "duckduckgo_search" still works if you already have it installed.
+ddgs>=9.0.0
+
+# Web scraping (no API key)
+trafilatura>=1.9.0
+
+# Config / env
+python-dotenv>=1.0.0
+
+# Markdown -> PDF export (optional, pure Python, no external binaries)
+markdown>=3.6
+xhtml2pdf>=0.2.16
+
+# Web UI (optional — run with: python -m streamlit run app.py)
+streamlit>=1.30
+
+# Backend API
+fastapi
+uvicorn
