@@ -15,6 +15,7 @@ const { getMetaConnection } = require('../lib/connections');
 const { executeMetaTool } = require('../lib/services/metaGraph');
 const { dashboardSummary } = require('../lib/dashboard');
 const { monthlyReport } = require('../lib/reports');
+const { checkAlerts } = require('../lib/roiMonitor');
 const { webSearch, scrape, analyse } = require('../lib/competitors');
 
 const router = express.Router();
@@ -133,6 +134,15 @@ router.get('/reports/monthly', requireAuth(AD_ROLES), async (req, res) => {
     res.json(await monthlyReport(req.auth.orgId));
   } catch (e) {
     res.status(aiErrorStatus(e.message)).json({ error: e.message });
+  }
+});
+
+// ── ROI Monitor Agent alerts (spec §9) ───────────────────────────────
+router.get('/alerts/check', requireAuth(AD_ROLES), async (req, res) => {
+  try {
+    res.json(await checkAlerts(req.auth.orgId));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
