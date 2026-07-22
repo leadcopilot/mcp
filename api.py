@@ -147,10 +147,12 @@ def run_job_task(job_id: str, job_type: str, memory_key: str, fn, *args):
         log_file.close()
 
 
-def get_client() -> agent.Mistral:
-    if not agent.MISTRAL_API_KEY:
-        raise ValueError("MISTRAL_API_KEY is not set.")
-    return agent.Mistral(api_key=agent.MISTRAL_API_KEY)
+def get_client():
+    """Re-platformed to Gemini — the LLM/embeddings no longer use a Mistral client.
+    Returns None (kept so existing call sites that pass a `client` still work)."""
+    if not (os.getenv("GEMINI_API_KEYS") or os.getenv("GEMINI_API_KEY")):
+        raise ValueError("GEMINI_API_KEYS is not set (deep research needs a Gemini key).")
+    return None
 
 # ---------------------------------------------------------------------------
 # API Endpoints

@@ -56,10 +56,15 @@ except ImportError:
 
 import trafilatura
 
+# Mistral is no longer required (re-platformed to Gemini). Import kept optional
+# only so any lingering type reference resolves; None when not installed.
 try:
-    from mistralai import Mistral  # older mistralai SDKs (<2.x)
+    from mistralai import Mistral  # noqa: F401
 except ImportError:
-    from mistralai.client import Mistral  # mistralai SDK >=2.x
+    try:
+        from mistralai.client import Mistral  # noqa: F401
+    except ImportError:
+        Mistral = None  # noqa: N816
 
 # ============================================================================
 # CONFIG — tune agent behavior here without touching the logic below
@@ -545,52 +550,40 @@ def call_groq(
 
 
 def call_mistral(
-    client: Mistral,
+    client,  # kept for signature compatibility; unused (Gemini needs no client object)
     system_prompt: str,
     user_prompt: str,
     max_tokens: int = MAX_OUTPUT_TOKENS,
     temperature: float = 0.4,
 ) -> str:
-    """Call the LLM with exponential-backoff retries: Mistral first, and if
-    all Mistral attempts fail (rate limit, outage), automatically fall back
-    to Groq ({GROQ_MODEL}) when GROQ_API_KEY is configured."""
-    last_error: Optional[Exception] = None
+    """LLM call — Gemini first (free, key-rotated), Groq as automatic fallback.
+    Re-platformed off the paid Mistral dependency; name kept so call sites are
+    unchanged."""
+    from gemini_py import gemini_chat
 
-    for attempt in range(1, MAX_RETRIES + 1):
+    try:
+        result = gemini_chat(system_prompt, user_prompt, max_tokens=max_tokens, temperature=temperature)
+        time.sleep(REQUEST_DELAY_SECONDS)
+        return result
+    except Exception as exc:
+        print(f"    ! Gemini call failed: {exc}")
+        if not GROQ_API_KEY:
+            raise RuntimeError(f"Gemini failed and no GROQ_API_KEY fallback set: {exc}")
+
+    print(f"    ! Falling back to Groq ({GROQ_MODEL})")
+    last_error: Optional[Exception] = None
+    for attempt in range(1, GROQ_MAX_RETRIES + 1):
         try:
-            response = client.chat.complete(
-                model=MISTRAL_MODEL,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                max_tokens=max_tokens,
-                temperature=temperature,
-            )
-            time.sleep(REQUEST_DELAY_SECONDS)  # be polite to the free-tier rate limit
-            return response.choices[0].message.content
+            result = call_groq(system_prompt, user_prompt, max_tokens, temperature)
+            time.sleep(REQUEST_DELAY_SECONDS)
+            return result
         except Exception as exc:
             last_error = exc
-            wait = BASE_RETRY_DELAY * (2 ** (attempt - 1))
-            print(f"    ! Mistral call failed (attempt {attempt}/{MAX_RETRIES}): {exc}")
-            if attempt < MAX_RETRIES:
-                print(f"    ... retrying in {wait:.0f}s")
-                time.sleep(wait)
+            print(f"    ! Groq fallback failed (attempt {attempt}/{GROQ_MAX_RETRIES}): {exc}")
+            if attempt < GROQ_MAX_RETRIES:
+                time.sleep(BASE_RETRY_DELAY * (2 ** (attempt - 1)))
 
-    if GROQ_API_KEY:
-        print(f"    ! Mistral failed {MAX_RETRIES}x — falling back to Groq ({GROQ_MODEL})")
-        for attempt in range(1, GROQ_MAX_RETRIES + 1):
-            try:
-                result = call_groq(system_prompt, user_prompt, max_tokens, temperature)
-                time.sleep(REQUEST_DELAY_SECONDS)
-                return result
-            except Exception as exc:
-                last_error = exc
-                print(f"    ! Groq fallback failed (attempt {attempt}/{GROQ_MAX_RETRIES}): {exc}")
-                if attempt < GROQ_MAX_RETRIES:
-                    time.sleep(BASE_RETRY_DELAY * (2 ** (attempt - 1)))
-
-    raise RuntimeError(f"All LLM calls failed (Mistral + fallback): {last_error}")
+    raise RuntimeError(f"All LLM calls failed (Gemini + Groq): {last_error}")
 
 
 def generate_section(
@@ -1669,12 +1662,12 @@ def run_report(client: Mistral, topic: str, no_pdf: bool) -> Path:
 
 
 def main() -> None:
-    if not MISTRAL_API_KEY:
-        print("ERROR: MISTRAL_API_KEY not set. Copy .env.example to .env and add your key.")
+    if not (os.getenv("GEMINI_API_KEYS") or os.getenv("GEMINI_API_KEY")):
+        print("ERROR: GEMINI_API_KEYS not set. Copy .env.example to .env and add your Gemini key.")
         sys.exit(1)
 
     args = parse_cli_args()
-    client = Mistral(api_key=MISTRAL_API_KEY)
+    client = None  # re-platformed to Gemini; LLM/embeddings need no client object
 
     if args.leads:
         run_lead_finding(client, args.leads, args.audience, args.count, args.no_pdf)

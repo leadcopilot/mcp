@@ -160,17 +160,19 @@ def chunk_csv(text: str) -> list[str]:
 # EMBEDDINGS
 # ============================================================================
 
-def embed_texts(client: agent.Mistral, texts: list[str]) -> list[Optional[list[float]]]:
-    """Embed texts in batches with retries. Failed batches yield None entries
-    (keyword fallback covers them at query time) instead of failing ingestion."""
+def embed_texts(client, texts: list[str]) -> list[Optional[list[float]]]:
+    """Embed texts in batches (Gemini embeddings — replaces paid Mistral). Failed
+    batches yield None entries (keyword fallback covers them at query time) instead
+    of failing ingestion. `client` is kept for signature compatibility (unused)."""
+    from gemini_py import gemini_embed
+
     vectors: list[Optional[list[float]]] = []
     for start in range(0, len(texts), EMBED_BATCH_SIZE):
         batch = texts[start:start + EMBED_BATCH_SIZE]
         batch_vectors: Optional[list[list[float]]] = None
         for attempt in range(1, EMBED_MAX_RETRIES + 1):
             try:
-                resp = client.embeddings.create(model=EMBED_MODEL, inputs=batch)
-                batch_vectors = [d.embedding for d in resp.data]
+                batch_vectors = gemini_embed(batch)
                 break
             except Exception as exc:
                 print(f"    ! embeddings call failed (attempt {attempt}/{EMBED_MAX_RETRIES}): {exc}")
