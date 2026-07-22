@@ -13,6 +13,9 @@ const { listLeads, leadStats, addLead, updateLeadStatus } = require('../lib/lead
 const { buildMetaAuthUrl } = require('../lib/auth/metaOAuth');
 const { getMetaConnection } = require('../lib/connections');
 const { executeMetaTool } = require('../lib/services/metaGraph');
+const { dashboardSummary } = require('../lib/dashboard');
+const { monthlyReport } = require('../lib/reports');
+const { webSearch, scrape, analyse } = require('../lib/competitors');
 
 const router = express.Router();
 const AD_ROLES = ['founder', 'ad_manager'];
@@ -52,15 +55,107 @@ router.post('/keywords/research', requireAuth(AD_ROLES), async (req, res) => {
   }
 });
 
-// ── AI Analyst chat (spec §4) ────────────────────────────────────────
+// ── AI Analyst chat (spec §4) — orchestrates real tools ──────────────
+const WEB_TOOLS = [
+  { name: 'search_web', description: 'Search the live web for competitor info, market pricing, or news.', parameters: { type: 'object', properties: { query: { type: 'string' }, max_results: { type: 'integer' } }, required: ['query'] } },
+  { name: 'scrape_website', description: 'Fetch a specific website URL and extract its content (competitor pricing/services).', parameters: { type: 'object', properties: { url: { type: 'string' }, extract: { type: 'string' } }, required: ['url'] } },
+];
+const META_ANALYST_TOOLS = [
+  { name: 'list_campaigns', description: "List this org's Meta campaigns with status and objective.", parameters: { type: 'object', properties: { status: { type: 'string' }, limit: { type: 'integer' } } } },
+  { name: 'get_insights', description: 'Get Meta ad performance (spend, clicks, CTR, CPL, conversions).', parameters: { type: 'object', properties: { campaign_id: { type: 'string' }, date_preset: { type: 'string' } } } },
+];
+
+async function makeAnalystExecutor(orgId) {
+  const conn = await getMetaConnection(orgId);
+  return async (name, args = {}) => {
+    if (name === 'search_web') {
+      const r = await webSearch(args.query, args.max_results || 5);
+      return r.success ? JSON.stringify(r.results?.slice(0, 5) || r.answer || 'no results') : `search error: ${r.error}`;
+    }
+    if (name === 'scrape_website') {
+      const r = await scrape(args.url, args.extract || 'all');
+      return r.success ? String(r.full_text || r.title || JSON.stringify(r)).slice(0, 1500) : `scrape error: ${r.error}`;
+    }
+    if (name === 'list_campaigns' || name === 'get_insights') {
+      if (!conn) return 'The Meta account is not connected for this org.';
+      const r = await executeMetaTool(name, args, conn.access_token, conn.ad_account_id);
+      return r.success ? (typeof r.data === 'string' ? r.data : JSON.stringify(r.data)) : `Meta error: ${r.error}`;
+    }
+    return `Unknown tool: ${name}`;
+  };
+}
+
 router.post('/ai-analyst', requireAuth(AD_ROLES), async (req, res) => {
   if (!req.body?.query) return res.status(400).json({ error: 'query is required' });
   try {
-    res.json(await runAnalyst(req.auth.orgId, req.body.query));
+    const conn = await getMetaConnection(req.auth.orgId);
+    const tools = [...WEB_TOOLS, ...(conn ? META_ANALYST_TOOLS : [])];
+    const executeTool = await makeAnalystExecutor(req.auth.orgId);
+    res.json(await runAnalyst(req.auth.orgId, req.body.query, { tools, executeTool }));
   } catch (e) {
     res.status(aiErrorStatus(e.message)).json({ error: e.message });
   }
 });
+
+// ── Dashboard (spec §7) + Monthly report (spec §8) ───────────────────
+router.get('/dashboard/summary', requireAuth(AD_ROLES), async (req, res) => {
+  try {
+    res.json(await dashboardSummary(req.auth.orgId));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+router.get('/reports/monthly', requireAuth(AD_ROLES), async (req, res) => {
+  try {
+    res.json(await monthlyReport(req.auth.orgId));
+  } catch (e) {
+    res.status(aiErrorStatus(e.message)).json({ error: e.message });
+  }
+});
+
+// ── Competitor intelligence ──────────────────────────────────────────
+router.post('/competitors/web-search', requireAuth(AD_ROLES), async (req, res) => {
+  if (!req.body?.query) return res.status(400).json({ error: 'query is required' });
+  try {
+    res.json(await webSearch(req.body.query, req.body.max_results || 5));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+router.post('/competitors/scrape', requireAuth(AD_ROLES), async (req, res) => {
+  if (!req.body?.url) return res.status(400).json({ error: 'url is required' });
+  try {
+    res.json(await scrape(req.body.url, req.body.extract || 'all'));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+router.post('/competitors/analyse', requireAuth(AD_ROLES), async (req, res) => {
+  if (!req.body?.competitor_name) return res.status(400).json({ error: 'competitor_name is required' });
+  try {
+    res.json(await analyse(req.auth.orgId, req.body));
+  } catch (e) {
+    res.status(aiErrorStatus(e.message)).json({ error: e.message });
+  }
+});
+
+// ── Meta Ads Creator wizard (Graph; 409 if not connected) ────────────
+const CREATOR_TOOLS = {
+  interests: 'search_interests',
+  estimate: 'get_delivery_estimate',
+  creative: 'create_ad_creative',
+  adset: 'create_ad_set',
+  ad: 'create_ad',
+  preview: 'get_ad_preview',
+  'ad-library': 'search_ad_library',
+};
+for (const [path, tool] of Object.entries(CREATOR_TOOLS)) {
+  router.post(`/meta-creator/${path}`, requireAuth(AD_ROLES), async (req, res) => {
+    const conn = await metaConnOr409(req.auth.orgId, res); if (!conn) return;
+    const r = await executeMetaTool(tool, req.body || {}, conn.access_token, conn.ad_account_id);
+    return r.success ? res.json({ data: r.data }) : res.status(502).json({ error: r.error });
+  });
+}
 
 // ── Leads (spec module 5) — shared Supabase leads table ─────────────
 router.get('/leads/list', requireAuth(AD_ROLES), async (req, res) => {
