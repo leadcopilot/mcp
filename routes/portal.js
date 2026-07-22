@@ -60,9 +60,22 @@ const WEB_TOOLS = [
   { name: 'search_web', description: 'Search the live web for competitor info, market pricing, or news.', parameters: { type: 'object', properties: { query: { type: 'string' }, max_results: { type: 'integer' } }, required: ['query'] } },
   { name: 'scrape_website', description: 'Fetch a specific website URL and extract its content (competitor pricing/services).', parameters: { type: 'object', properties: { url: { type: 'string' }, extract: { type: 'string' } }, required: ['url'] } },
 ];
+// Read-only Meta Graph tools the analyst may auto-call (writes stay behind the
+// explicit /campaigns/create + /meta-creator/* endpoints with a confirmation gate).
+const META_READ_TOOLS = new Set([
+  'list_campaigns', 'get_insights', 'get_ad_sets', 'get_ads', 'get_ad_creatives',
+  'get_custom_audiences', 'get_saved_audiences', 'get_targeting_insights',
+  'get_delivery_estimate', 'delivery_check', 'get_account_info', 'get_account_quality',
+  'search_ad_library', 'search_interests', 'get_leads',
+]);
 const META_ANALYST_TOOLS = [
   { name: 'list_campaigns', description: "List this org's Meta campaigns with status and objective.", parameters: { type: 'object', properties: { status: { type: 'string' }, limit: { type: 'integer' } } } },
   { name: 'get_insights', description: 'Get Meta ad performance (spend, clicks, CTR, CPL, conversions).', parameters: { type: 'object', properties: { campaign_id: { type: 'string' }, date_preset: { type: 'string' } } } },
+  { name: 'get_ad_sets', description: 'List ad sets (targeting, budget) for a campaign.', parameters: { type: 'object', properties: { campaign_id: { type: 'string' } } } },
+  { name: 'get_ads', description: 'List ads and their creatives for a campaign.', parameters: { type: 'object', properties: { campaign_id: { type: 'string' } } } },
+  { name: 'delivery_check', description: "Diagnose why a campaign/ad set isn't spending.", parameters: { type: 'object', properties: { object_id: { type: 'string' } } } },
+  { name: 'search_ad_library', description: 'Search the Meta Ad Library for competitor ads.', parameters: { type: 'object', properties: { search_terms: { type: 'string' }, country: { type: 'string' } }, required: ['search_terms'] } },
+  { name: 'search_interests', description: 'Find Meta interest-targeting options for a keyword.', parameters: { type: 'object', properties: { q: { type: 'string' } }, required: ['q'] } },
 ];
 
 async function makeAnalystExecutor(orgId) {
@@ -76,7 +89,7 @@ async function makeAnalystExecutor(orgId) {
       const r = await scrape(args.url, args.extract || 'all');
       return r.success ? String(r.full_text || r.title || JSON.stringify(r)).slice(0, 1500) : `scrape error: ${r.error}`;
     }
-    if (name === 'list_campaigns' || name === 'get_insights') {
+    if (META_READ_TOOLS.has(name)) {
       if (!conn) return 'The Meta account is not connected for this org.';
       const r = await executeMetaTool(name, args, conn.access_token, conn.ad_account_id);
       return r.success ? (typeof r.data === 'string' ? r.data : JSON.stringify(r.data)) : `Meta error: ${r.error}`;
