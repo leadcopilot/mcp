@@ -9,6 +9,37 @@
 
 ---
 
+## 0. Quick start (frontend dev)
+
+- **Base URL (local):** `http://localhost:3001`
+- **Every `/api/*` call needs the header:** `Authorization: Bearer <jwt>`
+- **Get the JWT** from the shared LeadPilot **backend** login (`POST /api/auth/login` on the FastAPI backend, port 8000) — same token the founder/telecaller portals use.
+- **First call after login:** `GET /api/me` → `{ user_id, org_id, role, business_name }` (for the header/session).
+
+```js
+const api = (path, opts = {}) => fetch(`http://localhost:3001${path}`, {
+  ...opts,
+  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(opts.headers || {}) },
+}).then(async (r) => {
+  if (r.status === 401) throw new Error('login expired');
+  if (r.status === 429) throw new Error('AI busy, retry');          // Gemini quota/overload
+  if (r.status === 409) return r.json();                            // e.g. "connect Meta first"
+  if (!r.ok) throw new Error((await r.json()).error || r.statusText);
+  return r.json();
+});
+
+// examples
+const me       = await api('/api/me');
+const profile  = await api('/api/org/profile');
+const copy     = await api('/api/copy/generate', { method: 'POST', body: JSON.stringify({ goal: 'book consults', platform: 'meta' }) });
+const board    = await api('/api/dashboard/summary');
+const report   = await api('/api/reports/monthly');
+```
+
+**Error contract:** JSON `{ "error": "..." }`; `401` login, `403` role, `409` needs-connection (has `connect_url`), `429` AI busy (retry), `400` bad input, `500` server.
+
+---
+
 ## 1. Auth model (read this first)
 
 The Ad Manager does **not** have its own login. LeadPilot's FastAPI backend is the **sole identity provider** for all portals. Flow:

@@ -25,6 +25,16 @@ function aiErrorStatus(msg) {
   return /\b(429|503)\b|quota|credits|depleted|RESOURCE_EXHAUSTED|high demand/i.test(msg) ? 429 : 500;
 }
 
+// ── Current user context (frontend header/session) ──────────────────
+router.get('/me', requireAuth(), async (req, res) => {
+  let business_name = null;
+  try {
+    const k = await getOrgKnowledge(req.auth.orgId);
+    business_name = k?.business_name || null;
+  } catch { /* org lookup best-effort */ }
+  res.json({ user_id: req.auth.userId, org_id: req.auth.orgId, role: req.auth.role, business_name });
+});
+
 // ── Org knowledge base (read from shared organizations) ──────────────
 router.get('/org/profile', requireAuth(AD_ROLES), async (req, res) => {
   try {
