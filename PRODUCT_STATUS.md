@@ -76,11 +76,14 @@ Assessed against `LeadPilot_AdManagerPortal_Spec-1.docx` (v2.0). Branch `main` i
 
 | # | Item | Needs your browser step? | Notes |
 |---|---|---|---|
-| 1 | **Deep-research** Mistral→Gemini re-platform | ❌ no | Removes the last paid API; Python sidecar |
-| 2 | **Social module** (OAuth connect + metrics + inbox) | ✅ yes (to test) | Build the code; you connect accounts |
+| 1 | ✅ **Deep-research** Mistral→Gemini | done | **Done** — Python Gemini chat + embeddings verified; **removes the last paid API** |
+| 2 | **Social module** (OAuth connect + metrics + inbox) | ✅ yes (to test) | Build code; you set up LinkedIn/Twitter/Google OAuth apps + connect |
 | 3 | **ROI Monitor Agent** (§9) | ✅ yes (needs Meta data) | Scheduled job: compare live metrics to baseline → alerts/auto-pause |
 | 4 | **Campaign→lead attribution columns** (§11) | ❌ no | Coordinate additive Alembic migration with backend team |
 | 5 | **External 135-tool MCP** (Tier 2) | ✅ yes | Vendor a Meta MCP server + a connected account to verify |
+
+> **No paid APIs remain.** The whole system runs on Gemini (free-tier key) + Supabase + Groq/DuckDuckGo fallbacks. Mistral (the last paid dependency) is gone.
+> *Note:* existing `rag_store/*.json` were embedded with Mistral (1024-dim); re-run Deep Research per company to re-embed with Gemini (3072-dim).
 
 ---
 
