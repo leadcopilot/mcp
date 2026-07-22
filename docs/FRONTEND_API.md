@@ -204,7 +204,7 @@ Exposed **through the AI Analyst** (§5), not as 135 REST endpoints. Tier 1 = ~2
 | AI analyst chat | ✅ yes | 🟡 engine; tools wiring |
 | Keyword research | ✅ yes | ⛔ building |
 | Meta connect + campaigns + creator | ✅ yes | ⛔ router building (creds now set) |
-| Leads | ✅ yes | 🟡 shared table |
+| Leads (list/add/update-status) | ✅ yes | ✅ live (shared Supabase table) |
 | Competitors / Social / Research | ✅ yes | 🟡 / ⛔ |
 
 **Frontend can start now** on: auth flow, layout/nav (6 modules), org profile, ad-copy generator, keyword table, campaign tracker table, lead table, AI chat. All shapes above are final.
