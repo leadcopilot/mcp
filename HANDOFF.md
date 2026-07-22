@@ -18,8 +18,10 @@ The Ad Manager Portal backend — the **3rd portal** of LeadPilot, integrated on
 - **Integrated API** (`routes/portal.js`), all auth-gated:
   - Org: `GET /api/org/profile`
   - AI: `POST /api/copy/generate`, `/keywords/research`, `/ai-analyst` (tool-using: web + Meta read tools)
-  - **Dashboard**: `GET /api/dashboard/summary` (leads + call-quality + ads) — live
-  - **Monthly report**: `GET /api/reports/monthly` (AI-generated) — live
+  - **Dashboard**: `GET /api/dashboard/summary` + `/dashboard/detail` (funnel, telecaller cross-ref, quality trend) — live
+  - **Monthly report**: `GET /api/reports/monthly` (AI-generated + wasted-spend log) — live
+  - **ROI alerts (§9)**: `GET /api/alerts` (persisted, poll) · `/alerts/check` (live) · `POST /api/alerts/:id/ack` — always-on scheduler
+  - **Drift check (§3)**: `GET /api/org/drift-check` · **User**: `GET /api/me`
   - Leads: `GET /api/leads/list`, `POST /api/leads/add`, `/leads/update-status`
   - Competitors: `POST /api/competitors/{web-search,scrape,analyse}`
   - Meta: `GET /api/connections/meta/start` + `/auth/meta/callback` (OAuth → Supabase), `POST /api/campaigns/{list,insights,create}`, `/api/meta-creator/*` (409 until an account is connected)
@@ -51,5 +53,7 @@ npm test                             # vitest
 See **`docs/FRONTEND_API.md`** — the full API + feature contract (auth, every endpoint's request/response, per-endpoint status). The frontend can build against it now.
 
 ## Design docs
+- `SYSTEM_DESIGN.md` — **current** architecture + 2026-standard assessment + ranked optimizations.
+- `PRODUCT_STATUS.md` — spec compliance + your setup guide.
 - `docs/superpowers/specs/2026-07-21-admanager-phase1-supabase-gemini-design.md` — architecture + the integration pivot (§1a).
 - `ARCHITECTURE.md`, `META_INTEGRATION.md`, `BLOCKERS.md` — prior context.

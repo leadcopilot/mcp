@@ -15,9 +15,9 @@ Assessed against `LeadPilot_AdManagerPortal_Spec-1.docx` (v2.0). Branch `main` i
 | §6 | **Meta Ads tool reference** | 🟡 **27 built, needs connect** | 27 Graph tools implemented (campaigns/ad sets/ads/creatives/audiences/insights/diagnostics/ad-library). Real data needs Meta connect. The **135-catalog** additionally needs the external MCP server vendored |
 | §7 | **Unified Command Dashboard** | ✅ **Done** | `GET /api/dashboard/summary` — leads + telecaller call-quality + ads (when connected) |
 | §8 | **Monthly Reporting** | ✅ **Done** | `GET /api/reports/monthly` — AI-generated, grounded (live-verified) |
-| §9 | **Smart Alerts & ROI Monitor Agent** | ⛔ **Not built** | The always-on background agent that watches campaigns vs the org's baseline and alerts/auto-pauses. Needs Meta connect for live data + a scheduled job |
+| §9 | **Smart Alerts & ROI Monitor Agent** | ✅ **Built** | Always-on scheduler + persisted `ad_alerts` + `GET /api/alerts`; lead-volume/quality triggers live, CPL/budget triggers attach on Meta connect |
 | §10 | **Social Media Engagement** | ⛔ **Not built** | Needs social OAuth (FB/IG/YouTube/LinkedIn/X) + unified inbox/replies |
-| §11 | **Cross-Portal Data Flow** | 🟡 **Partial** | Shared DB (org/user/leads) ✅; telecaller call-quality read ✅; **campaign→lead attribution columns** (`source_campaign`, `source_ad_id`) pending a coordinated backend Alembic migration |
+| §11 | **Cross-Portal Data Flow** | ✅ **Built** | Shared DB (org/user/leads); call-quality read; **attribution columns added** (`source_campaign`/`source_ad_id`/`meta_lead_id`/`platform`) + wired into `addLead`. ⚠️ Backend team: add these to the SQLAlchemy `Lead` model so Alembic autogenerate keeps them |
 | — | Leads / Competitors / Keyword research | ✅ **Done** | `/api/leads/*`, `/api/competitors/*`, `/api/keywords/research` |
 
 **Score:** the two "most important deliverables" per the spec are the **Monthly Report (✅ done)** and the **ROI Monitor Agent (⛔ not built)**. Everything AI + data + dashboard + reporting is done; the Meta-live and always-on-agent and social pieces remain.
@@ -78,9 +78,11 @@ Assessed against `LeadPilot_AdManagerPortal_Spec-1.docx` (v2.0). Branch `main` i
 |---|---|---|---|
 | 1 | ✅ **Deep-research** Mistral→Gemini | done | **Done** — Python Gemini chat + embeddings verified; **removes the last paid API** |
 | 2 | **Social module** (OAuth connect + metrics + inbox) | ✅ yes (to test) | Build code; you set up LinkedIn/Twitter/Google OAuth apps + connect |
-| 3 | **ROI Monitor Agent** (§9) | ✅ yes (needs Meta data) | Scheduled job: compare live metrics to baseline → alerts/auto-pause |
-| 4 | **Campaign→lead attribution columns** (§11) | ❌ no | Coordinate additive Alembic migration with backend team |
-| 5 | **External 135-tool MCP** (Tier 2) | ✅ yes | Vendor a Meta MCP server + a connected account to verify |
+| 3 | ✅ **ROI Monitor Agent** (§9) | done | **Done** — always-on scheduler + persisted alerts; CPL/budget triggers attach on Meta connect |
+| 4 | ✅ **Campaign→lead attribution columns** (§11) | done | **Done** — columns added + wired; backend team should mirror in the Lead model |
+| 5 | **Social module** (§10) | ✅ yes | Needs LinkedIn/Twitter/Google OAuth apps you create |
+| 6 | **External 135-tool MCP** (Tier 2) | ✅ yes | Vendor a Meta MCP server + a connected account to verify |
+| 7 | **Meta live execution** (§5/§6) | ✅ yes | Connect the Meta account (browser) |
 
 > **No paid APIs remain.** The whole system runs on Gemini (free-tier key) + Supabase + Groq/DuckDuckGo fallbacks. Mistral (the last paid dependency) is gone.
 > *Note:* existing `rag_store/*.json` were embedded with Mistral (1024-dim); re-run Deep Research per company to re-embed with Gemini (3072-dim).
