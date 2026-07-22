@@ -10,6 +10,7 @@ const apiRoutes  = require('./routes/api');
 const socialRoutes = require('./routes/social');
 const researchRoutes = require('./routes/research');
 const { getDb }  = require('./lib/db');
+const { checkHealth } = require('./lib/health');
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -40,29 +41,7 @@ app.use('/api',  apiRoutes);
 app.use('/social', socialRoutes);
 
 // Health check
-app.get('/health', async (req, res) => {
-  // Check if Playwright chromium browser binary is present
-  let playwrightReady = false;
-  try {
-    const { chromium } = require('playwright');
-    const execPath = chromium.executablePath();
-    const fs = require('fs');
-    playwrightReady = !!(execPath && fs.existsSync(execPath));
-  } catch {}
-
-  res.json({
-    status: 'ok',
-    time:   new Date().toISOString(),
-    env: {
-      gemini:     !!process.env.GEMINI_API_KEY,
-      groq:       !!process.env.GROQ_API_KEY,
-      meta:       !!(process.env.META_APP_ID && process.env.META_APP_SECRET),
-      google:     !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_DEVELOPER_TOKEN),
-      tavily:     !!process.env.TAVILY_API_KEY ? 'tavily' : 'duckduckgo',
-      playwright: playwrightReady,
-    },
-  });
-});
+app.get('/health', async (_req, res) => res.json(await checkHealth()));
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
