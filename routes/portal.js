@@ -10,6 +10,9 @@ const { generateAdCopy } = require('../lib/ai/adCopy');
 const { researchKeywords } = require('../lib/ai/keywords');
 const { runAnalyst } = require('../lib/ai/analyst');
 const { listLeads, leadStats, addLead, updateLeadStatus } = require('../lib/leads');
+const { buildMetaAuthUrl } = require('../lib/auth/metaOAuth');
+const { getMetaConnection } = require('../lib/connections');
+const { executeMetaTool } = require('../lib/services/metaGraph');
 
 const router = express.Router();
 const AD_ROLES = ['founder', 'ad_manager'];
@@ -85,15 +88,54 @@ router.post('/leads/update-status', requireAuth(AD_ROLES), async (req, res) => {
   }
 });
 
-// ── Connection status (graceful; Meta OAuth wiring pending) ──────────
-router.get('/connections/status', requireAuth(AD_ROLES), (_req, res) => {
-  // No per-org Meta token is stored in the integrated setup yet, so always
-  // "not connected" for now; app creds being present only means we CAN connect.
-  const metaConfigured = !!(process.env.META_APP_ID && process.env.META_APP_SECRET);
+// ── Meta connection + campaigns (Graph API, per-org token) ───────────
+router.get('/connections/meta/start', requireAuth(AD_ROLES), async (req, res) => {
+  if (!process.env.META_APP_ID || !process.env.META_APP_SECRET) {
+    return res.status(400).json({ error: 'Meta app not configured (META_APP_ID/SECRET)' });
+  }
+  try {
+    res.json({ auth_url: await buildMetaAuthUrl(req.auth.orgId) });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.get('/connections/status', requireAuth(AD_ROLES), async (req, res) => {
+  const conn = await getMetaConnection(req.auth.orgId);
   res.json({
-    meta: { connected: false, configured: metaConfigured, connect_url: '/auth/meta' },
+    meta: conn
+      ? { connected: true, ad_account_id: conn.ad_account_id }
+      : { connected: false, configured: !!(process.env.META_APP_ID && process.env.META_APP_SECRET), connect_url: '/api/connections/meta/start' },
     google: { connected: false, configured: false },
   });
+});
+
+async function metaConnOr409(orgId, res) {
+  const conn = await getMetaConnection(orgId);
+  if (!conn) {
+    res.status(409).json({ error: 'Connect your Meta account first', connect_url: '/api/connections/meta/start' });
+    return null;
+  }
+  return conn;
+}
+
+router.post('/campaigns/list', requireAuth(AD_ROLES), async (req, res) => {
+  const conn = await metaConnOr409(req.auth.orgId, res); if (!conn) return;
+  const r = await executeMetaTool('list_campaigns', req.body || {}, conn.access_token, conn.ad_account_id);
+  return r.success ? res.json({ data: r.data }) : res.status(502).json({ error: r.error });
+});
+
+router.post('/campaigns/insights', requireAuth(AD_ROLES), async (req, res) => {
+  const conn = await metaConnOr409(req.auth.orgId, res); if (!conn) return;
+  const r = await executeMetaTool('get_insights', req.body || {}, conn.access_token, conn.ad_account_id);
+  return r.success ? res.json({ data: r.data }) : res.status(502).json({ error: r.error });
+});
+
+router.post('/campaigns/create', requireAuth(AD_ROLES), async (req, res) => {
+  if (!req.body?.confirmed) return res.json({ requires_confirmation: true, preview: req.body || {} });
+  const conn = await metaConnOr409(req.auth.orgId, res); if (!conn) return;
+  const r = await executeMetaTool('create_campaign', req.body, conn.access_token, conn.ad_account_id);
+  return r.success ? res.json({ data: r.data }) : res.status(502).json({ error: r.error });
 });
 
 module.exports = router;

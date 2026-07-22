@@ -6,6 +6,7 @@ const cors    = require('cors');
 const path    = require('path');
 
 const authRoutes = require('./routes/auth');
+const metaCallbackRoutes = require('./routes/metaCallback');
 const portalRoutes = require('./routes/portal');
 const apiRoutes  = require('./routes/api');
 const socialRoutes = require('./routes/social');
@@ -36,6 +37,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
+app.use('/auth', metaCallbackRoutes);   // integrated Meta callback (takes precedence)
 app.use('/auth', authRoutes);
 app.use('/api/research', researchRoutes);
 app.use('/api',  portalRoutes);   // integrated, auth-gated (takes precedence)
