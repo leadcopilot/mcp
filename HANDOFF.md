@@ -15,7 +15,15 @@ The Ad Manager Portal backend — the **3rd portal** of LeadPilot, integrated on
 - **Org knowledge base** read from shared `organizations` (`lib/org.js`).
 - **AI ad-copy generation** (`lib/ai/adCopy.js`) — grounded, zero-hallucination, live-verified on real org data.
 - **AI keyword research** (`lib/ai/keywords.js`) and **AI Analyst chat** (`lib/ai/analyst.js`).
-- **Integrated API** (`routes/portal.js`) — auth-gated: `GET /api/org/profile`, `POST /api/copy/generate`, `POST /api/keywords/research`, `POST /api/ai-analyst`, `GET /api/connections/status`, `GET /health`.
+- **Integrated API** (`routes/portal.js`), all auth-gated:
+  - Org: `GET /api/org/profile`
+  - AI: `POST /api/copy/generate`, `/keywords/research`, `/ai-analyst` (tool-using: web + Meta read tools)
+  - **Dashboard**: `GET /api/dashboard/summary` (leads + call-quality + ads) — live
+  - **Monthly report**: `GET /api/reports/monthly` (AI-generated) — live
+  - Leads: `GET /api/leads/list`, `POST /api/leads/add`, `/leads/update-status`
+  - Competitors: `POST /api/competitors/{web-search,scrape,analyse}`
+  - Meta: `GET /api/connections/meta/start` + `/auth/meta/callback` (OAuth → Supabase), `POST /api/campaigns/{list,insights,create}`, `/api/meta-creator/*` (409 until an account is connected)
+  - `GET /health`
 - **23 tests** (`npm test`).
 
 ## 🟡 / ⛔ Pending (not yet integrated)

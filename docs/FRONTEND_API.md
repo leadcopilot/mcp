@@ -185,6 +185,29 @@ Exposed **through the AI Analyst** (§5), not as 135 REST endpoints. Tier 1 = ~2
 
 ---
 
+## 13a. Unified Dashboard & Monthly Report — ✅ live
+
+### `GET /api/dashboard/summary` ✅
+Combines the org's leads + shared telecaller call-quality + (if connected) live ad insights.
+```jsonc
+{
+  "leads": { "total": 17, "by_status": { "contacted": 15, "new": 2 },
+             "by_pipeline_stage": { "New": 11, "Closed Won": 1, "Negotiation": 1 },
+             "closed_won_revenue": 55000 },
+  "call_quality": { "analysed": 20, "by_verdict": { "Hot": 5, "Warm": 10, "Cold": 2, "Junk": 3 },
+                    "avg_bant_score": 50 },
+  "ads": { "connected": false }   // or { connected:true, insights:{…} }
+}
+```
+
+### `GET /api/reports/monthly` ✅
+```jsonc
+{ "org": "Personiks", "generated_at": "2026-07-22T…",
+  "data": { /* same as dashboard/summary */ },
+  "report": "### Executive Summary\n… markdown, AI-generated from the real numbers …" }
+```
+Render `report` as markdown; use `data` for charts/tiles.
+
 ## 14. Health
 ### `GET /health` ✅
 ```jsonc
@@ -196,15 +219,19 @@ Exposed **through the AI Analyst** (§5), not as 135 REST endpoints. Tier 1 = ~2
 
 ## Implementation status summary (be honest with the team)
 
-| Module | Frontend can build UI? | Backend live? |
+| Module | Endpoints | Backend live? |
 |---|---|---|
-| Auth (Bearer JWT) | ✅ yes | 🟡 middleware ready, routes gating next |
-| Org profile / knowledge | ✅ yes | ✅ read works |
-| AI ad-copy | ✅ yes | ✅ engine; 🟡 endpoint |
-| AI analyst chat | ✅ yes | 🟡 engine; tools wiring |
-| Keyword research | ✅ yes | ⛔ building |
-| Meta connect + campaigns + creator | ✅ yes | ⛔ router building (creds now set) |
-| Leads (list/add/update-status) | ✅ yes | ✅ live (shared Supabase table) |
-| Competitors / Social / Research | ✅ yes | 🟡 / ⛔ |
+| Auth (Bearer JWT) | all routes | ✅ live (JWT-gated) |
+| Org profile / knowledge | `GET /api/org/profile` | ✅ live |
+| AI ad-copy | `POST /api/copy/generate` | ✅ live |
+| AI keyword research | `POST /api/keywords/research` | ✅ live (AI-estimated volumes) |
+| AI analyst chat (tool-using) | `POST /api/ai-analyst` | ✅ live (web + Meta read tools) |
+| **Unified dashboard** | `GET /api/dashboard/summary` | ✅ **live** (leads + call-quality + ads) |
+| **Auto monthly report** | `GET /api/reports/monthly` | ✅ **live** (AI-generated) |
+| Leads (list/add/update-status) | `GET/POST /api/leads/*` | ✅ live (shared Supabase) |
+| Competitors | `POST /api/competitors/{web-search,scrape,analyse}` | ✅ live |
+| Meta connect | `GET /api/connections/meta/start`, `/status` | ✅ live (OAuth flow) |
+| Meta campaigns + creator | `POST /api/campaigns/*`, `/api/meta-creator/*` | 🟡 built; needs a **connected** Meta account (409 until then) |
+| Social / Deep Research | — | ⛔ pending |
 
 **Frontend can start now** on: auth flow, layout/nav (6 modules), org profile, ad-copy generator, keyword table, campaign tracker table, lead table, AI chat. All shapes above are final.
