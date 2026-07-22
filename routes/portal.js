@@ -13,9 +13,10 @@ const { listLeads, leadStats, addLead, updateLeadStatus } = require('../lib/lead
 const { buildMetaAuthUrl } = require('../lib/auth/metaOAuth');
 const { getMetaConnection } = require('../lib/connections');
 const { executeMetaTool } = require('../lib/services/metaGraph');
-const { dashboardSummary } = require('../lib/dashboard');
+const { dashboardSummary, dashboardDetail } = require('../lib/dashboard');
 const { monthlyReport } = require('../lib/reports');
 const { checkAlerts } = require('../lib/roiMonitor');
+const { driftCheck } = require('../lib/drift');
 const { webSearch, scrape, analyse } = require('../lib/competitors');
 
 const router = express.Router();
@@ -127,6 +128,20 @@ router.get('/dashboard/summary', requireAuth(AD_ROLES), async (req, res) => {
     res.json(await dashboardSummary(req.auth.orgId));
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+router.get('/dashboard/detail', requireAuth(AD_ROLES), async (req, res) => {
+  try {
+    res.json(await dashboardDetail(req.auth.orgId));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+router.get('/org/drift-check', requireAuth(AD_ROLES), async (req, res) => {
+  try {
+    res.json(await driftCheck(req.auth.orgId));
+  } catch (e) {
+    res.status(aiErrorStatus(e.message)).json({ error: e.message });
   }
 });
 router.get('/reports/monthly', requireAuth(AD_ROLES), async (req, res) => {
