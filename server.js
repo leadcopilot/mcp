@@ -52,6 +52,19 @@ app.get('/health', async (_req, res) => res.json(await checkHealth()));
 // Initialise database on startup
 getDb();
 
+// ─── ROI Monitor Agent — always-on background check (spec §9) ───────────────
+const { runAllOrgs } = require('./lib/roiMonitor');
+const { isConfigured } = require('./lib/supabase');
+if (isConfigured()) {
+  const ROI_INTERVAL_MS = Number(process.env.ROI_MONITOR_INTERVAL_MS) || 30 * 60 * 1000;
+  setTimeout(() => runAllOrgs().catch((e) => console.error('[roi-monitor]', e.message)), 15000);
+  setInterval(() => {
+    runAllOrgs()
+      .then((n) => n && console.log(`[roi-monitor] persisted ${n} new alert(s)`))
+      .catch((e) => console.error('[roi-monitor]', e.message));
+  }, ROI_INTERVAL_MS).unref();
+}
+
 app.listen(PORT, () => {
   console.log('');
   console.log('╔══════════════════════════════════════════════════╗');

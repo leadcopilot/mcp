@@ -15,7 +15,7 @@ const { getMetaConnection } = require('../lib/connections');
 const { executeMetaTool } = require('../lib/services/metaGraph');
 const { dashboardSummary, dashboardDetail } = require('../lib/dashboard');
 const { monthlyReport } = require('../lib/reports');
-const { checkAlerts } = require('../lib/roiMonitor');
+const { checkAlerts, listStoredAlerts, acknowledgeAlert } = require('../lib/roiMonitor');
 const { driftCheck } = require('../lib/drift');
 const { webSearch, scrape, analyse } = require('../lib/competitors');
 
@@ -153,9 +153,25 @@ router.get('/reports/monthly', requireAuth(AD_ROLES), async (req, res) => {
 });
 
 // ── ROI Monitor Agent alerts (spec §9) ───────────────────────────────
+// On-demand live check:
 router.get('/alerts/check', requireAuth(AD_ROLES), async (req, res) => {
   try {
     res.json(await checkAlerts(req.auth.orgId));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+// Persisted alerts (written by the always-on scheduler) — the frontend polls this:
+router.get('/alerts', requireAuth(AD_ROLES), async (req, res) => {
+  try {
+    res.json({ alerts: await listStoredAlerts(req.auth.orgId, req.query.status || 'open') });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+router.post('/alerts/:id/ack', requireAuth(AD_ROLES), async (req, res) => {
+  try {
+    res.json(await acknowledgeAlert(req.auth.orgId, req.params.id));
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
