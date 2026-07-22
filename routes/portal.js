@@ -9,6 +9,7 @@ const { getOrgKnowledge } = require('../lib/org');
 const { generateAdCopy } = require('../lib/ai/adCopy');
 const { researchKeywords } = require('../lib/ai/keywords');
 const { runAnalyst } = require('../lib/ai/analyst');
+const { listLeads, leadStats, addLead, updateLeadStatus } = require('../lib/leads');
 
 const router = express.Router();
 const AD_ROLES = ['founder', 'ad_manager'];
@@ -55,6 +56,32 @@ router.post('/ai-analyst', requireAuth(AD_ROLES), async (req, res) => {
     res.json(await runAnalyst(req.auth.orgId, req.body.query));
   } catch (e) {
     res.status(aiErrorStatus(e.message)).json({ error: e.message });
+  }
+});
+
+// ── Leads (spec module 5) — shared Supabase leads table ─────────────
+router.get('/leads/list', requireAuth(AD_ROLES), async (req, res) => {
+  try {
+    const leads = await listLeads(req.auth.orgId, { status: req.query.status, limit: Number(req.query.limit) || 100 });
+    const stats = await leadStats(req.auth.orgId);
+    res.json({ leads, stats });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+router.post('/leads/add', requireAuth(AD_ROLES), async (req, res) => {
+  try {
+    res.json(await addLead(req.auth.orgId, req.body || {}));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+router.post('/leads/update-status', requireAuth(AD_ROLES), async (req, res) => {
+  if (!req.body?.lead_id) return res.status(400).json({ error: 'lead_id is required' });
+  try {
+    res.json(await updateLeadStatus(req.auth.orgId, req.body.lead_id, req.body));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
