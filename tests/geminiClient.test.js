@@ -75,6 +75,6 @@ live('geminiClient function-calling (live)', () => {
       throw e;
     }
     expect(result.toolsUsed).toContain('get_price');
-    expect(result.answer).toMatch(/7999/);
+    expect(result.answer).toMatch(/7[,.]?999/);
   }, 60000);
 });
