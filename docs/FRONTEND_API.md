@@ -260,7 +260,7 @@ Render `report` as markdown; use `data` for charts/tiles.
 | Current user | `GET /api/me` | ✅ live (`{user_id,org_id,role,business_name}`) |
 | **Unified dashboard** | `GET /api/dashboard/summary` | ✅ **live** (leads + call-quality + ads) |
 | **Dashboard drill-downs** | `GET /api/dashboard/detail` | ✅ **live** (funnel, by_telecaller, quality_trend) |
-| **Auto monthly report** | `GET /api/reports/monthly` | ✅ **live** (AI-generated + wasted-spend log) |
+| **Auto monthly report** | `GET /api/reports/monthly` (JSON) · `GET /api/reports/monthly.pdf` (shareable PDF) | ✅ **live** (AI-generated + wasted-spend log) |
 | **ROI alerts (§9)** | `GET /api/alerts` (persisted, poll this) · `GET /api/alerts/check` (live) · `POST /api/alerts/:id/ack` | ✅ **live** — always-on scheduler writes alerts; +CPL/budget when Meta connected |
 | **Profile drift (§3)** | `GET /api/org/drift-check` | ✅ live (website vs profile) |
 | Leads (list/add/update-status) | `GET/POST /api/leads/*` | ✅ live (shared Supabase) |

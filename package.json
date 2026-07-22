@@ -21,6 +21,7 @@
     "express-session": "^1.18.0",
     "groq-sdk": "^0.7.0",
     "jsonwebtoken": "^9.0.3",
+    "marked": "^18.0.7",
     "node-fetch": "^3.3.2",
     "playwright": "^1.48.0",
     "xlsx": "^0.18.5"

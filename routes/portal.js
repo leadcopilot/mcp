@@ -151,6 +151,19 @@ router.get('/reports/monthly', requireAuth(AD_ROLES), async (req, res) => {
     res.status(aiErrorStatus(e.message)).json({ error: e.message });
   }
 });
+// Shareable PDF export (spec §8)
+router.get('/reports/monthly.pdf', requireAuth(AD_ROLES), async (req, res) => {
+  try {
+    const { reportToPdf } = require('../lib/pdf');
+    const report = await monthlyReport(req.auth.orgId);
+    const pdf = await reportToPdf(report);
+    res.set('Content-Type', 'application/pdf');
+    res.set('Content-Disposition', `inline; filename="leadpilot-report-${Date.now()}.pdf"`);
+    res.send(pdf);
+  } catch (e) {
+    res.status(aiErrorStatus(e.message)).json({ error: e.message });
+  }
+});
 
 // ── ROI Monitor Agent alerts (spec §9) ───────────────────────────────
 // On-demand live check:
