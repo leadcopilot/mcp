@@ -6,6 +6,7 @@ const cors    = require('cors');
 const path    = require('path');
 
 const authRoutes = require('./routes/auth');
+const portalRoutes = require('./routes/portal');
 const apiRoutes  = require('./routes/api');
 const socialRoutes = require('./routes/social');
 const researchRoutes = require('./routes/research');
@@ -37,7 +38,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/auth', authRoutes);
 app.use('/api/research', researchRoutes);
-app.use('/api',  apiRoutes);
+app.use('/api',  portalRoutes);   // integrated, auth-gated (takes precedence)
+app.use('/api',  apiRoutes);      // legacy prototype routes (being migrated)
 app.use('/social', socialRoutes);
 
 // Health check
