@@ -56,4 +56,5 @@ See **`docs/FRONTEND_API.md`** — the full API + feature contract (auth, every 
 - `SYSTEM_DESIGN.md` — **current** architecture + 2026-standard assessment + ranked optimizations.
 - `PRODUCT_STATUS.md` — spec compliance + your setup guide.
 - `docs/superpowers/specs/2026-07-21-admanager-phase1-supabase-gemini-design.md` — architecture + the integration pivot (§1a).
-- `ARCHITECTURE.md`, `META_INTEGRATION.md`, `BLOCKERS.md` — prior context.
+
+_(The prototype-era docs ARCHITECTURE / BLOCKERS / DELIVERABLES / META_INTEGRATION / SETUP were removed — superseded by SYSTEM_DESIGN.md, PRODUCT_STATUS.md, HANDOFF.md. Their content remains in git history.)_
