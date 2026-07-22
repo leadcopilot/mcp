@@ -17,6 +17,24 @@ Two prototype repos exist:
 
 The comparative review concluded: **base on `main`, port `developer`'s tool breadth, wire the external MCP server as an optional layer.** Same end capability, least risk.
 
+---
+
+## 1a. Revision 2 (2026-07-22) — Integration Pivot (supersedes §5, §6 auth)
+
+**Discovery:** the target Supabase project (`otbdjrexiscbxqlcnnvx`) already hosts the live **LeadPilot backend** (FastAPI, `D:\leadpilot-backend`) — 6 orgs, 10 users, 19 leads, plus Telecaller tables (`audio_calls`, `memory_bubbles`, `lead_analysis`, `follow_ups`, `attendance`). Verified against its `security.py`, `config.py`, `gemini.py`.
+
+This makes the Ad Manager the **3rd portal on one shared backend**, not a standalone app. Corrected decisions:
+
+- **Auth = the backend's custom HS256 JWT, NOT Supabase Auth.** FastAPI is "the sole identity provider for LeadPilot" (all portals + Flutter app). Tokens are HS256-signed with a shared `JWT_SECRET_KEY`, carrying `sub` (user id), `org_id`, `role`. The Ad Manager **verifies that token** and reads the claims. No Supabase Auth, no JWKS, no login UI of its own (login goes through the backend's `/auth`).
+- **Org model = the existing `organizations` table** (varchar id) — which already holds the spec §3 knowledge base (`services`, `pricing_min/max`, `competitors`, `brand_voice`, `languages`, `usps`, `strict_lead_scoping`, `alert_config`). Drop the duplicate `organisations`/`org_knowledge`/`profiles`/`org_members`.
+- **User model = the existing `users` table** (`org_id`, `role`, `hashed_password`).
+- **Leads = the existing `leads` table** (shared). Campaign-attribution columns (`source_campaign`, `source_ad_id`, `meta_lead_id`, `platform`) to be added **additively + coordinated with the backend team's Alembic models** (so autogenerate won't drop them).
+- **Security = app-layer org scoping (no RLS)** — matches the backend (trusted server connects as postgres/service-role; every query scoped by the JWT's `org_id`). RLS dropped; our HS256 JWTs aren't Supabase-issued so `auth.uid()` RLS can't apply anyway.
+- **Gemini = mirror the backend's `gemini.py`** — REST `generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent`, `x-goog-api-key` header, comma-separated `GEMINI_API_KEYS` rotated on 429/503, `thinkingConfig.thinkingLevel` from `GEMINI_THINKING_LEVEL`. `gemini-3.5-flash` and the `AQ.` key format are **confirmed valid** (in production use by the backend).
+- **Kept, genuinely-new ad tables:** `meta_connections`, `google_connections`, `oauth_states`, `campaigns_cache`, `keywords_cache`, `social_metrics`, `social_connections`, `social_metrics_history`, `research_jobs` — `org_id` (text) scoped in code to `organizations.id`.
+
+The migrations `0001`/`0002` (applied) are reconciled by `0003_integrate_shared_model.sql` (drop duplicates, restore `leads`, drop RLS). Plan 1 Tasks 6–7 (db.js) target the shared schema per the above.
+
 ## 2. Goals (Phase-1)
 
 1. Migrate persistence **SQLite → Supabase Postgres** with **Row-Level Security**, real **Supabase Auth** (users → org membership → roles), and **Supabase Storage** for assets/reports.
@@ -42,8 +60,8 @@ The comparative review concluded: **base on `main`, port `developer`'s tool brea
 | Meta architecture | Graph API primary + full MCP catalog via hybrid router |
 | Meta tool breadth | **All ~135** exposed to AI (deviation from Plan doc's "curate 25" — deliberate) |
 | Deep Research | Re-platform Mistral → Gemini |
-| Auth | Full Supabase Auth + org membership + roles + RLS |
-| DB access | `@supabase/supabase-js`; `lib/db.js` becomes async |
+| Auth | ~~Full Supabase Auth + RLS~~ -> Backend HS256 JWT (shared identity provider); app-layer org scoping, no RLS (see section 1a) |
+| DB access | supabase-js (service-role) + pg for migrations; lib/db.js becomes async, targets shared schema (see section 1a) |
 | Gemini SDK | Migrate `@google/generative-ai` (deprecated) → `@google/genai` |
 | Build location | In place in `Ad_Manager-main`, `git init` for reviewable history |
 | Commits | Only when the user explicitly asks (per user global rules) |
