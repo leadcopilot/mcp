@@ -13,6 +13,7 @@ const { listLeads, leadStats, addLead, updateLeadStatus } = require('../lib/lead
 const { buildMetaAuthUrl } = require('../lib/auth/metaOAuth');
 const { getMetaConnection } = require('../lib/connections');
 const { executeMetaTool } = require('../lib/services/metaGraph');
+const { listMetaTools, executeMetaMcpTool } = require('../lib/mcp/manager');
 const { dashboardSummary, dashboardDetail } = require('../lib/dashboard');
 const { monthlyReport } = require('../lib/reports');
 const { checkAlerts, listStoredAlerts, acknowledgeAlert } = require('../lib/roiMonitor');
@@ -317,6 +318,22 @@ router.post('/campaigns/create', requireAuth(AD_ROLES), async (req, res) => {
   if (!req.body?.confirmed) return res.json({ requires_confirmation: true, preview: req.body || {} });
   const conn = await metaConnOr409(req.auth.orgId, res); if (!conn) return;
   const r = await executeMetaTool('create_campaign', req.body, conn.access_token, conn.ad_account_id);
+  return r.success ? res.json({ data: r.data }) : res.status(502).json({ error: r.error });
+});
+
+// ── Tier-2 Meta MCP catalog (spec §6) — the full meta-ads-mcp tool set ────
+router.get('/meta-mcp/tools', requireAuth(AD_ROLES), async (req, res) => {
+  const conn = await metaConnOr409(req.auth.orgId, res); if (!conn) return;
+  try {
+    res.json({ tools: await listMetaTools(conn.access_token, conn.ad_account_id) });
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+});
+router.post('/meta-mcp/call', requireAuth(AD_ROLES), async (req, res) => {
+  if (!req.body?.tool) return res.status(400).json({ error: 'tool is required' });
+  const conn = await metaConnOr409(req.auth.orgId, res); if (!conn) return;
+  const r = await executeMetaMcpTool(req.body.tool, req.body.args, conn.access_token, conn.ad_account_id);
   return r.success ? res.json({ data: r.data }) : res.status(502).json({ error: r.error });
 });
 
