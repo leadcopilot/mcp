@@ -12,7 +12,7 @@ Assessed against `LeadPilot_AdManagerPortal_Spec-1.docx` (v2.0). Branch `main` i
 | §4 | **Research by Simple Chat** (AI Analyst) | ✅ **Done** | `POST /api/ai-analyst` — Gemini function-calling over web search + scrape + 15 Meta read tools, grounded in org profile |
 | §5 | **Ad Copy Creation** | ✅ **Done** | `POST /api/copy/generate` — grounded, zero-hallucination (live-verified on Personiks) |
 | §5 | **Direct push to Meta** | ✅ **Live-verified** | Endpoints built + **verified against a real connected ad account** (`act_3183801585260453`); each org connects its own account via `/api/connections/meta/start` |
-| §6 | **Meta Ads tool reference** | ✅ **Done** | 27 direct Graph tools (Tier 1) + the **37-tool `meta-ads-mcp` server (Tier 2)** now vendored & wired per-org (`/api/meta-mcp/*`) — both live-verified against the real account |
+| §6 | **Meta Ads tool reference** | ✅ **Done** | 27 direct Graph tools (Tier 1) + the **134-tool `@mikusnuz/meta-ads-mcp` server (Tier 2)** — the full Meta Marketing API surface — vendored & wired per-org (`/api/meta-mcp/*`), live-verified against the real account |
 | §7 | **Unified Command Dashboard** | ✅ **Done** | `GET /api/dashboard/summary` — leads + telecaller call-quality + ads (when connected) |
 | §8 | **Monthly Reporting** | ✅ **Done** | `GET /api/reports/monthly` — AI-generated, grounded (live-verified) |
 | §9 | **Smart Alerts & ROI Monitor Agent** | ✅ **Built** | Always-on scheduler + persisted `ad_alerts` + `GET /api/alerts`; lead-volume/quality triggers live, CPL/budget triggers attach on Meta connect |
