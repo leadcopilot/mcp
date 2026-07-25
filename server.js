@@ -4,6 +4,8 @@ const express = require('express');
 const session = require('express-session');
 const cors    = require('cors');
 const path    = require('path');
+const helmet  = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 const authRoutes = require('./routes/auth');
 const metaCallbackRoutes = require('./routes/metaCallback');
@@ -19,7 +21,14 @@ const PORT = process.env.PORT || 3001;
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
+app.use(helmet({ contentSecurityPolicy: false })); // CSP off: single-file UI uses inline scripts
 app.use(cors({ origin: true, credentials: true }));
+
+// Rate limiting (production hardening): a general cap on the API, a tighter cap on
+// the AI/Meta endpoints (each call costs quota / spawns work). Disabled under test.
+if (process.env.NODE_ENV !== 'test') {
+  app.use('/api', rateLimit({ windowMs: 60_000, max: 200, standardHeaders: true, legacyHeaders: false }));
+}
 // Capture the raw body so the Meta webhook can verify X-Hub-Signature-256.
 app.use(express.json({
   verify: (req, _res, buf) => { req.rawBody = buf; },
