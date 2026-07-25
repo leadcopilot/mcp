@@ -11,7 +11,7 @@ const { researchKeywords } = require('../lib/ai/keywords');
 const { runAnalyst } = require('../lib/ai/analyst');
 const { listLeads, leadStats, addLead, updateLeadStatus } = require('../lib/leads');
 const { buildMetaAuthUrl } = require('../lib/auth/metaOAuth');
-const { getMetaConnection } = require('../lib/connections');
+const { getMetaConnection, getValidMetaConnection, refreshMetaToken } = require('../lib/connections');
 const { executeMetaTool } = require('../lib/services/metaGraph');
 const { listMetaTools, executeMetaMcpTool } = require('../lib/mcp/manager');
 const { dashboardSummary, dashboardDetail } = require('../lib/dashboard');
@@ -294,13 +294,24 @@ router.get('/connections/status', requireAuth(AD_ROLES), async (req, res) => {
 });
 
 async function metaConnOr409(orgId, res) {
-  const conn = await getMetaConnection(orgId);
+  const conn = await getValidMetaConnection(orgId); // transparently refreshes near expiry
   if (!conn) {
     res.status(409).json({ error: 'Connect your Meta account first', connect_url: '/api/connections/meta/start' });
     return null;
   }
   return conn;
 }
+
+// Manual token refresh (tokens auto-refresh near expiry; this forces it).
+router.post('/connections/meta/refresh', requireAuth(AD_ROLES), async (req, res) => {
+  try {
+    const r = await refreshMetaToken(req.auth.orgId);
+    if (!r) return res.status(409).json({ error: 'Meta not connected', connect_url: '/api/connections/meta/start' });
+    res.json(r);
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+});
 
 router.post('/campaigns/list', requireAuth(AD_ROLES), async (req, res) => {
   const conn = await metaConnOr409(req.auth.orgId, res); if (!conn) return;
