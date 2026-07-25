@@ -267,6 +267,8 @@ Render `report` as markdown; use `data` for charts/tiles.
 | Competitors | `POST /api/competitors/{web-search,scrape,analyse}` | ✅ live |
 | Meta connect | `GET /api/connections/meta/start`, `/status` | ✅ live (OAuth flow) |
 | Meta campaigns + creator | `POST /api/campaigns/*`, `/api/meta-creator/*` | 🟡 built; needs a **connected** Meta account (409 until then) |
-| Social / Deep Research | — | ⛔ pending |
+| **Social Hub (§10)** | `GET /api/social/metrics` | ✅ live — Facebook/Instagram via Meta token; YouTube/LinkedIn/Twitter need their OAuth apps |
+| **Meta MCP catalog (§6)** | `GET /api/meta-mcp/tools` · `POST /api/meta-mcp/call {tool,args}` | ✅ live — 37-tool meta-ads-mcp, per-org token |
+| Deep Research | `POST /api/research/*` | 🟡 sidecar (Gemini re-platformed) |
 
 **Frontend can start now** on: auth flow, layout/nav (6 modules), org profile, ad-copy generator, keyword table, campaign tracker table, lead table, AI chat. All shapes above are final.

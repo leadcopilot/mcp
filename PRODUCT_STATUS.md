@@ -12,11 +12,11 @@ Assessed against `LeadPilot_AdManagerPortal_Spec-1.docx` (v2.0). Branch `main` i
 | §4 | **Research by Simple Chat** (AI Analyst) | ✅ **Done** | `POST /api/ai-analyst` — Gemini function-calling over web search + scrape + 15 Meta read tools, grounded in org profile |
 | §5 | **Ad Copy Creation** | ✅ **Done** | `POST /api/copy/generate` — grounded, zero-hallucination (live-verified on Personiks) |
 | §5 | **Direct push to Meta** | ✅ **Live-verified** | Endpoints built + **verified against a real connected ad account** (`act_3183801585260453`); each org connects its own account via `/api/connections/meta/start` |
-| §6 | **Meta Ads tool reference** | ✅ **27 live-verified** | 27 Graph tools **executing against a real account** (account info, list campaigns, insights all confirmed). The **135-catalog** still needs the external MCP server vendored (optional) |
+| §6 | **Meta Ads tool reference** | ✅ **Done** | 27 direct Graph tools (Tier 1) + the **37-tool `meta-ads-mcp` server (Tier 2)** now vendored & wired per-org (`/api/meta-mcp/*`) — both live-verified against the real account |
 | §7 | **Unified Command Dashboard** | ✅ **Done** | `GET /api/dashboard/summary` — leads + telecaller call-quality + ads (when connected) |
 | §8 | **Monthly Reporting** | ✅ **Done** | `GET /api/reports/monthly` — AI-generated, grounded (live-verified) |
 | §9 | **Smart Alerts & ROI Monitor Agent** | ✅ **Built** | Always-on scheduler + persisted `ad_alerts` + `GET /api/alerts`; lead-volume/quality triggers live, CPL/budget triggers attach on Meta connect |
-| §10 | **Social Media Engagement** | ⛔ **Not built** | Needs social OAuth (FB/IG/YouTube/LinkedIn/X) + unified inbox/replies |
+| §10 | **Social Media Engagement** | 🟡 **FB/IG live** | Facebook + Instagram metrics live via the Meta token (`/api/social/metrics`); YouTube/LinkedIn/Twitter built but need their own OAuth apps; unified inbox/replies still to build |
 | §11 | **Cross-Portal Data Flow** | ✅ **Built** | Shared DB (org/user/leads); call-quality read; **attribution columns added** (`source_campaign`/`source_ad_id`/`meta_lead_id`/`platform`) + wired into `addLead`. ⚠️ Backend team: add these to the SQLAlchemy `Lead` model so Alembic autogenerate keeps them |
 | — | Leads / Competitors / Keyword research | ✅ **Done** | `/api/leads/*`, `/api/competitors/*`, `/api/keywords/research` |
 
@@ -80,8 +80,8 @@ Assessed against `LeadPilot_AdManagerPortal_Spec-1.docx` (v2.0). Branch `main` i
 | 2 | **Social module** (OAuth connect + metrics + inbox) | ✅ yes (to test) | Build code; you set up LinkedIn/Twitter/Google OAuth apps + connect |
 | 3 | ✅ **ROI Monitor Agent** (§9) | done | **Done** — always-on scheduler + persisted alerts; CPL/budget triggers attach on Meta connect |
 | 4 | ✅ **Campaign→lead attribution columns** (§11) | done | **Done** — columns added + wired; backend team should mirror in the Lead model |
-| 5 | **Social module** (§10) | ✅ yes | Needs LinkedIn/Twitter/Google OAuth apps you create |
-| 6 | **External 135-tool MCP** (Tier 2) | ✅ yes | Vendor a Meta MCP server (optional — 27 Graph tools already cover core workflows) |
+| 5 | 🟡 **Social module** (§10) | partial | **FB/IG live**; YouTube/LinkedIn/Twitter need OAuth apps you create; inbox/replies to build |
+| 6 | ✅ **Meta MCP (Tier 2)** | done | **Done** — `meta-ads-mcp` (37 tools) vendored + wired + live-verified |
 | 7 | ✅ **Meta live execution** (§5/§6) | done | **Connected + verified live** on `act_3183801585260453` — campaigns/insights/account all working |
 
 > **No paid APIs remain.** The whole system runs on Gemini (free-tier key) + Supabase + Groq/DuckDuckGo fallbacks. Mistral (the last paid dependency) is gone.
