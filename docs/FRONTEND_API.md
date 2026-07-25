@@ -265,7 +265,7 @@ Render `report` as markdown; use `data` for charts/tiles.
 | **Profile drift (§3)** | `GET /api/org/drift-check` | ✅ live (website vs profile) |
 | Leads (list/add/update-status) | `GET/POST /api/leads/*` | ✅ live (shared Supabase) |
 | Competitors | `POST /api/competitors/{web-search,scrape,analyse}` | ✅ live |
-| Meta connect | `GET /api/connections/meta/start`, `/status` | ✅ live (OAuth flow) |
+| Meta connect | `GET /api/connections/meta/start`, `/status` · `POST /api/connections/meta/refresh` | ✅ live (OAuth + auto token refresh) |
 | Meta campaigns + creator | `POST /api/campaigns/*`, `/api/meta-creator/*` | 🟡 built; needs a **connected** Meta account (409 until then) |
 | **Social Hub (§10)** | `GET /api/social/metrics` | ✅ live — Facebook/Instagram via Meta token; YouTube/LinkedIn/Twitter need their OAuth apps |
 | **Meta MCP catalog (§6)** | `GET /api/meta-mcp/tools` · `POST /api/meta-mcp/call {tool,args}` | ✅ live — **134-tool** @mikusnuz/meta-ads-mcp, per-org token |

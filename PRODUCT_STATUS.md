@@ -81,7 +81,7 @@ Assessed against `LeadPilot_AdManagerPortal_Spec-1.docx` (v2.0). Branch `main` i
 | 3 | ✅ **ROI Monitor Agent** (§9) | done | **Done** — always-on scheduler + persisted alerts; CPL/budget triggers attach on Meta connect |
 | 4 | ✅ **Campaign→lead attribution columns** (§11) | done | **Done** — columns added + wired; backend team should mirror in the Lead model |
 | 5 | 🟡 **Social module** (§10) | partial | **FB/IG live**; YouTube/LinkedIn/Twitter need OAuth apps you create; inbox/replies to build |
-| 6 | ✅ **Meta MCP (Tier 2)** | done | **Done** — `meta-ads-mcp` (37 tools) vendored + wired + live-verified |
+| 6 | ✅ **Meta MCP (Tier 2)** | done | **Done** — `@mikusnuz/meta-ads-mcp` (134 tools) vendored + wired + live-verified |
 | 7 | ✅ **Meta live execution** (§5/§6) | done | **Connected + verified live** on `act_3183801585260453` — campaigns/insights/account all working |
 
 > **No paid APIs remain.** The whole system runs on Gemini (free-tier key) + Supabase + Groq/DuckDuckGo fallbacks. Mistral (the last paid dependency) is gone.

@@ -10,7 +10,7 @@ The Ad Manager portal of **LeadPilot** — the 3rd portal alongside Telecaller a
 - **Unified dashboard** — leads + telecaller call-quality + ad insights, with funnel / telecaller cross-reference / quality-trend drill-downs.
 - **Auto monthly report** — AI-written, wasted-spend log included, exportable as a **shareable PDF**.
 - **ROI Monitor Agent** — always-on alerts on lead-volume/quality (CPL/budget triggers on Meta connect).
-- **Meta integration** — OAuth + 27 direct Graph API tools (create/insights/audiences/diagnostics), per-org encrypted tokens.
+- **Meta integration** — OAuth (auto-refreshing tokens) + **27 direct Graph tools** (Tier 1) **and the 134-tool `@mikusnuz/meta-ads-mcp` catalog** (Tier 2), per-org encrypted tokens.
 - **Deep research** — per-company research + RAG chat (Gemini).
 - **Leads / competitors / drift detection.**
 

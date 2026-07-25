@@ -37,7 +37,7 @@ Node + Express (:3001)
 | 1 | **SQL aggregation** (Postgres RPC / views) for dashboard + ROI | Today aggregations fetch rows and count in JS — fine at pilot scale, O(rows) at 100k+ | An org exceeds ~10k leads |
 | 2 | **Redis cache** for dashboard/insights (short TTL) | Repeated dashboard loads + Meta insights are cacheable | Dashboard traffic grows |
 | 3 | **Split `routes/portal.js`** by domain (ai/dashboard/leads/meta) | 300 lines now; keep files focused | Before it passes ~500 lines |
-| 4 | **Meta token refresh** | Tokens expire ~60 days; currently manual reconnect | Before the first 60-day client |
+| 4 | ✅ **Meta token refresh** | **Done** — auto-refresh within 7 days of expiry + manual `/api/connections/meta/refresh` | — |
 | 5 | **Rate limiting + observability** (logs/metrics/alerts) | Production hardening | Before public/multi-client load |
 | 6 | **Durable job queue** (BullMQ) for Deep Research + ROI scheduler | `setInterval` is fine single-box; not multi-instance safe | When running >1 server instance |
 | 7 | **TypeScript** migration (incremental) | Type safety across a growing multi-portal codebase | Ongoing, module by module |
