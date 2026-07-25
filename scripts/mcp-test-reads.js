@@ -1,0 +1,53 @@
+// Comprehensive READ-ONLY sweep of the 134-tool server (no writes/deletes).
+const { Client } = require('@modelcontextprotocol/sdk/client/index.js');
+const { StdioClientTransport } = require('@modelcontextprotocol/sdk/client/stdio.js');
+const { getMetaConnection } = require('../lib/connections');
+const path = require('path');
+
+const DIST = path.join(__dirname, '..', 'node_modules', '@mikusnuz', 'meta-ads-mcp', 'dist', 'index.js');
+
+(async () => {
+  const c = await getMetaConnection('9a9778d7-c9b7-46d5-8788-9d36e7ac3f8a');
+  const at = c.access_token, acct = (c.ad_account_id || '').replace(/^act_/, '');
+  const A = { access_token: at, account_id: acct };
+
+  const tests = [
+    // account-level list/get (need account_id)
+    ['list_campaigns', A], ['list_adsets', A], ['list_ads', A], ['list_creatives', A],
+    ['list_images', A], ['list_videos', A], ['list_canvases', A], ['list_custom_audiences', A],
+    ['list_saved_audiences', A], ['list_lead_forms', A], ['list_catalogs', A], ['list_feeds', A],
+    ['list_rules', A], ['list_experiments', A], ['list_offline_event_sets', A],
+    ['list_budget_schedules', A], ['list_rf_predictions', A], ['list_block_lists', A],
+    ['list_account_users', A], ['get_account_insights', A], ['get_ad_account', A],
+    ['get_account_activities', A],
+    // token-level
+    ['list_ad_accounts', { access_token: at }], ['list_businesses', { access_token: at }],
+    ['debug_token', { access_token: at }], ['list_system_users', { access_token: at }],
+    // search / targeting
+    ['search_targeting', { access_token: at, query: 'fitness' }],
+    ['search_locations', { access_token: at, query: 'Mumbai' }],
+    ['search_ad_library', { access_token: at, search_terms: 'gym', ad_reached_countries: ['IN'] }],
+  ];
+
+  const transport = new StdioClientTransport({
+    command: 'node', args: [DIST],
+    env: { ...process.env, META_ADS_ACCESS_TOKEN: at, META_AD_ACCOUNT_ID: acct, META_APP_ID: process.env.META_APP_ID, META_APP_SECRET: process.env.META_APP_SECRET },
+  });
+  const client = new Client({ name: 'leadpilot', version: '1.0.0' }, { capabilities: {} });
+  await client.connect(transport);
+
+  let pass = 0, fail = 0; const fails = [];
+  for (const [name, args] of tests) {
+    try {
+      const r = await client.callTool({ name, arguments: args });
+      const txt = (r.content?.[0]?.text || '').replace(/\s+/g, ' ');
+      // "error" inside means Meta rejected; validation error means wrong params
+      const bad = r.isError || /"error"|validation error|invalid_param|unsupported/i.test(txt.slice(0, 90));
+      if (bad) { fail++; fails.push(name); } else { pass++; }
+    } catch (e) { fail++; fails.push(name + '(' + e.message.slice(0, 30) + ')'); }
+  }
+  console.log(`READ-TOOL SWEEP: ${pass}/${tests.length} passed`);
+  if (fails.length) console.log('needs-param/failed:', fails.join(', '));
+  await client.close();
+  process.exit(0);
+})().catch((e) => { console.error('ERR', e.message); process.exit(1); });
