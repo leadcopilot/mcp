@@ -17,6 +17,7 @@ const { dashboardSummary, dashboardDetail } = require('../lib/dashboard');
 const { monthlyReport } = require('../lib/reports');
 const { checkAlerts, listStoredAlerts, acknowledgeAlert } = require('../lib/roiMonitor');
 const { driftCheck } = require('../lib/drift');
+const { getSocialMetrics } = require('../lib/social');
 const { webSearch, scrape, analyse } = require('../lib/competitors');
 
 const router = express.Router();
@@ -142,6 +143,15 @@ router.get('/org/drift-check', requireAuth(AD_ROLES), async (req, res) => {
     res.json(await driftCheck(req.auth.orgId));
   } catch (e) {
     res.status(aiErrorStatus(e.message)).json({ error: e.message });
+  }
+});
+
+// ── Social Media Hub (spec §10) ──────────────────────────────────────
+router.get('/social/metrics', requireAuth(AD_ROLES), async (req, res) => {
+  try {
+    res.json(await getSocialMetrics(req.auth.orgId));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 router.get('/reports/monthly', requireAuth(AD_ROLES), async (req, res) => {
